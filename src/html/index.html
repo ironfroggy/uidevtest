@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>The News</title>
+        <link rel="stylesheet/less" type="text/css" href="../css/site.less">
+        <script type="template/mustache" data-name=nav-item>
+            <li class=item>
+                <img src="{{ thumb }}"></img>
+                <div class=info>
+                    <h3><a href="{{ url }}">{{ title }}</a></h3>
+                    <div>
+                        {{#categories}}
+                        <span class="category">{{.}}</span>
+                        {{/categories}}
+                    </div>
+                    <div>Posted: {{#nicedate}}{{published}}{{/nicedate}}</div>
+                    <div>Updated: {{#nicedate}}{{updated}}{{/nicedate}}</div>
+                </div>
+                <div style="clear: both;"></div>
+            </li>
+        </script>
+        <script type="template/mustache" data-name=social>
+            <div class=social>
+            {{#share}}
+                <span class=icon-{{.}}>
+                    <span>
+                        <img src="../images/uidevtest-sprites-grey.png" class=grey> 
+                        <img src="../images/uidevtest-sprites.png" class=color> 
+                    </span>
+                    <a href="#">{{.}}</a>
+                </span>
+            {{/share}}
+            </div>
+        </script>
+        <script type="template/mustache" data-name=article>
+            <section class=article>
+                <header>
+                    <div class=dateline>
+                        Updated: {{#nicedate}}{{updated}}{{/nicedate}}
+                        |
+                        Posted: {{#nicedate}}{{published}}{{/nicedate}}
+                    </div>
+                    <h1>{{ title }}</h1>
+                    {{{ social }}}
+                </header>
+                <div class=photo>
+                    <img src="{{image}}">
+                    <div class=info>
+                        <span class=credit>{{image_credit}}</span>
+                        <span class=caption>{{image_caption}}</span>
+                    </div>
+                </div>
+                <div class=content>
+                    {{{ social }}}
+                    <div class=author>
+                        By {{#authors}}<span><a href="#">{{.}}</a></span>{{/authors}}
+                    </div>
+                    <div class=text>
+                        {{{content}}}
+                    </div>
+                </div>
+            </section>
+        </script>
+    </head>
+    <body>
+        <header>
+            <div class=crumbs>
+                <a href="#">HOME</a>
+                <a href="#">NEWS</a>
+            </div>
+        </header>
+        <nav> <ul> </ul> </nav>
+        <section class=article></section>
+        <script type="text/javascript" src="../js/less.js"></script>
+        <script type="text/javascript" src="../js/jquery-1.8.0.min.js"></script>
+        <script type="text/javascript" src="../js/strftime.js"></script>
+        <script type="text/javascript" src="../js/mustache.js"></script>
+        <script type="text/javascript"><!--
+            var news = {
+                stories: []
+            ,   createStoryView: function(i, story) {
+                    var view = {
+                        'title': story.title
+                    ,   'thumb': story.lead_photo_image_thumb
+                    ,   'image': story.lead_photo_image_url
+                    ,   'image_caption': story.lead_photo_caption
+                    ,   'image_credit': story.lead_photo_credit
+                    ,   'authors': story.author
+                    ,   'categories': story.categories_name
+                    ,   'updated': story.updated
+                    ,   'published': story.pub_date
+                    ,   'content': story.story
+                    ,   'url': function() {
+                            return '#'+i;
+                        }
+
+                    ,   'nicedate': function() {
+                            return function(text, render) {
+                                var when = new Date(Date.parse(render(text)));
+                                var whenstring = strftime(when, '%H:%M %p %A, %b. %D, %Y');
+                                return whenstring.replace(' am ', ' a.m. ').replace(' pm ', ' p.m. ');
+                            };
+                        }
+
+                    ,   'share': ['comment', 'share', 'favorite', 'vote']
+                    ,   'social': function() {
+                            var t = $('script[data-name=social]').text();
+                            return Mustache.render(t, this);
+                        }
+                    };
+                    return view
+                }
+            ,   renderNavigation: function() {
+                    $('section.article').hide();
+                    $('nav ul').html('');
+                    $.each(this.stories, function(i, story) {
+                        var view = news.createStoryView(i, story);
+                        var t = $('script[data-name=nav-item]').text();
+                        var r = Mustache.render(t, view);
+                        $('nav ul').append(r);
+                    });
+                    $('nav').show();
+                }
+            ,   renderArticle: function(i) {
+                    $('nav').hide();
+                    $('section.article').show();
+                    var view = news.createStoryView(i, this.stories[i]);
+                    var a = $('section.article');
+                    var t = $('script[data-name=article]').text();
+                    var r = Mustache.render(t, view);
+                    a.replaceWith(r);
+                }
+            };
+            $.getJSON("../js/uidevtest-data.js", function(data) {
+                news.stories = data.objects;
+                window.onhashchange();
+            });
+            window.onhashchange = function(e) {
+                var m = /[0-9]+/.exec(location.hash);
+                if (m !== null && m.length === 1) {
+                    news.renderArticle(m[0]);
+                } else {
+                    news.renderNavigation();
+                }
+            };
+        --></script>
+    </body>
+</html>
